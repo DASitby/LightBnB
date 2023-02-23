@@ -11,19 +11,29 @@ const pool = new Pool({user: 'vagrant',
 /**
  * Get a single user from the database given their email.
  * @param {String} email The email of the user.
+ * @param {*} limit The number of results to return.
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
   let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
-  }
-  return Promise.resolve(user);
+  return pool.query(
+    `
+    SELECT * 
+    FROM users
+    WHERE email = $1;
+    `,
+    [email])
+    .then((result) => {
+      if (result.rows[0]) {
+        user = result.rows[0];
+      } else {
+        user = null;
+      }
+      return Promise.resolve(user);
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
 };
 exports.getUserWithEmail = getUserWithEmail;
 
