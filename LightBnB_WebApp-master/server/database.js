@@ -138,7 +138,6 @@ const getAllProperties = function(options, limit = 10) {
   console.log(queryString.length);
   if (options.city) {
     if (queryString.length === 154) {
-      console.log('city filter first');
       queryString += 'WHERE';
     } else {
       queryString += 'and';
@@ -152,7 +151,6 @@ const getAllProperties = function(options, limit = 10) {
   }
   if (options.minimum_price_per_night && options.maximum_price_per_night) {
     if (queryString.length === 154) {
-      console.log('price filter first');
       queryString += 'WHERE';
     } else {
       queryString += 'and';
@@ -173,7 +171,6 @@ const getAllProperties = function(options, limit = 10) {
     ORDER BY cost_per_night
     LIMIT $${queryParams.length};
     `;
-  console.log(queryString, queryParams);
 
   return pool.query(queryString, queryParams)
     .then((res) => res.rows)
