@@ -43,21 +43,9 @@ exports.getUserWithEmail = getUserWithEmail;
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function(id) {
-  let user;
-  return pool.query(
-    `
-    SELECT * 
-    FROM users
-    WHERE id = $1;
-    `,
-    [id])
+  return pool.query(`SELECT * FROM users WHERE id = $1;`,[id])
     .then((result) => {
-      if (result.rows[0]) {
-        user = result.rows[0];
-      } else {
-        user = null;
-      }
-      return Promise.resolve(user);
+      return Promise.resolve(result.rows[0] || null);
     })
     .catch((err) => {
       console.log(err.message);
@@ -72,16 +60,13 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser =  function(user) {
-  let name = user.name;
-  let email = user.email;
-  let password = user.password;
   return pool.query(
     `
     INSERT INTO users (name, email, password) 
       VALUES ($1, $2, $3)
       RETURNING *;
     `,
-    [name, email, password])
+    [user.name, user.email, user.password])
     .then((result) => {
       return Promise.resolve(result.rows[0]);
     })
@@ -102,13 +87,13 @@ const getAllReservations = function(guest_id, limit = 10) {
   return pool.query(
     `
     SELECT reservations.id, properties.title, properties.cost_per_night, reservations.start_date, avg(rating) as average_rating
-FROM reservations
-JOIN properties ON reservations.property_id = properties.id
-JOIN property_reviews ON properties.id = property_reviews.property_id
-WHERE reservations.guest_id = $1
-GROUP BY properties.id, reservations.id
-ORDER BY reservations.start_date
-LIMIT $2;
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN property_reviews ON properties.id = property_reviews.property_id
+    WHERE reservations.guest_id = $1
+    GROUP BY properties.id, reservations.id
+    ORDER BY reservations.start_date
+    LIMIT $2;
     `,
     [guest_id, limit])
     .then((result) => {
@@ -127,6 +112,8 @@ exports.getAllReservations = getAllReservations;
  * @param {{}} options An object containing query options.
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
+ * This function is used in both the Search and My Listings pages
+ * and constructs the query according to the search parameters set
  */
 const getAllProperties = function(options, limit = 10) {
   const queryParams = [];
@@ -135,7 +122,14 @@ const getAllProperties = function(options, limit = 10) {
     FROM properties
     JOIN property_reviews ON properties.id = property_id
     `;
-  console.log(queryString.length);
+  //My Listings Page Query
+  if (options.owner_id) {
+    queryParams.push(`${options.owner_id}`);
+    queryString += `WHERE owner_id = $${queryParams.length}`;
+  }
+  //Search queries:
+  //Check each search criteria and append to the query, checking if the above criteria have been used
+  //City:
   if (options.city) {
     if (queryString.length === 154) {
       queryString += 'WHERE';
@@ -145,10 +139,8 @@ const getAllProperties = function(options, limit = 10) {
     queryParams.push(`%${options.city}%`);
     queryString += ` city LIKE $${queryParams.length} `;
   }
-  if (options.owner_id) {
-    queryParams.push(`${options.owner_id}`);
-    queryString += `WHERE owner_id = $${queryParams.length}`;
-  }
+  
+  //Price Range:
   if (options.minimum_price_per_night && options.maximum_price_per_night) {
     if (queryString.length === 154) {
       queryString += 'WHERE';
@@ -159,13 +151,16 @@ const getAllProperties = function(options, limit = 10) {
     queryParams.push(`${options.maximum_price_per_night}`);
     queryString += ` cost_per_night BETWEEN $${queryParams.length - 1} and $${queryParams.length}`;
   }
+
   queryString += `
     GROUP BY properties.id
     `;
+  //Minimum Rating:
   if (options.minimum_rating) {
     queryParams.push(`${options.minimum_rating}`);
     queryString += `HAVING avg(property_reviews.rating) > $${queryParams.length} `;
   }
+
   queryParams.push(limit);
   queryString += `
     ORDER BY cost_per_night
