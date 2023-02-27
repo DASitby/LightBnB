@@ -53,3 +53,28 @@
   ![Create Listing](https://github.com/DASitby/LightBnB/blob/master/images/createlisting.png "Create Listing page")
   ![My Reservations](https://github.com/DASitby/LightBnB/blob/master/images/myreservations.png "My Reservations page")
   ![Search](https://github.com/DASitby/LightBnB/blob/master/images/search.png "Search page")
+
+
+  ## Dependencies
+    bcrypt: 3.0.8
+    body-parser: 1.19.0
+    cookie-session: 1.3.3
+    express: 4.17.1
+    nodemon: 1.19.1
+    pg: 8.9.0
+
+  You can install dependencies by running 'npm i --save-dev' in the terminal
+
+  ## Setup Database:
+
+  After Installing dependencies, enter 'psql' in the terminal
+
+  1. Connect to the database with '\c LightBnB'
+  2. run '\i /migrations/01_schema.sql' to create the tables in the database
+  3. run '\i /seeds/01_seeds.sql' and '\i /seeds/02_seeds.sql' to populate the database with the sample data and test out the app's various features.
+
+  ## Setup Web App
+
+  1. Navigate to the LightBnB_WebApp-master directory
+  2. run 'npm run local' to start the web server nodemon instance
+  3. if you make any changes to the code, nodemon will automatically restart the server with the changes enacted.
