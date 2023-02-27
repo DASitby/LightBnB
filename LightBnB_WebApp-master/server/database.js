@@ -78,7 +78,7 @@ exports.addUser = addUser;
 const getAllReservations = function(guest_id, limit = 10) {
   return pool.query(
     `
-    SELECT reservations.id, properties.title, properties.cost_per_night, reservations.start_date, avg(rating) as average_rating
+    SELECT reservations.id, properties.title, properties.cost_per_night, reservations.start_date, avg(rating) as average_rating, properties.number_of_bedrooms, properties.number_of_bathrooms, properties.parking_spaces, properties.thumbnail_photo_url
     FROM reservations
     JOIN properties ON reservations.property_id = properties.id
     JOIN property_reviews ON properties.id = property_reviews.property_id
@@ -139,8 +139,8 @@ const getAllProperties = function(options, limit = 10) {
     } else {
       queryString += 'and';
     }
-    queryParams.push(`${options.minimum_price_per_night}`);
-    queryParams.push(`${options.maximum_price_per_night}`);
+    queryParams.push(`${options.minimum_price_per_night * 100}`);
+    queryParams.push(`${options.maximum_price_per_night * 100}`);
     queryString += ` cost_per_night BETWEEN $${queryParams.length - 1} and $${queryParams.length}`;
   }
 
@@ -150,7 +150,7 @@ const getAllProperties = function(options, limit = 10) {
   //Minimum Rating:
   if (options.minimum_rating) {
     queryParams.push(`${options.minimum_rating}`);
-    queryString += `HAVING avg(property_reviews.rating) > $${queryParams.length} `;
+    queryString += `HAVING avg(property_reviews.rating) >= $${queryParams.length} `;
   }
 
   queryParams.push(limit);
@@ -194,7 +194,7 @@ const addProperty = function(property) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *;
     `,
-    [property.owner_id, property.title, property.description, property.thumbnail_photo_url, property.cover_photo_url, property.cost_per_night, property.street, property.city, property.province, property.post_code, property.country, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms])
+    [property.owner_id, property.title, property.description, property.thumbnail_photo_url, property.cover_photo_url, (property.cost_per_night * 100), property.street, property.city, property.province, property.post_code, property.country, property.parking_spaces, property.number_of_bathrooms, property.number_of_bedrooms])
     .then((res) => {
       return res.rows[0];
     })
